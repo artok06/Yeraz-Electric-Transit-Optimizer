@@ -4,6 +4,11 @@
 
 The Yeraz Electric Transit Optimizer is a comprehensive, data-driven decision support tool designed to help city planners strategically electrify their bus fleet. It empowers cities to make objective decisions that balance environmental impact, social equity, and financial & operational constraints.
 
+IMPORTANT LICENSING NOTICE 
+
+The original code (v. 1.0) was licensed under the Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0) license.
+Starting from 13.12.25, the code in this repository is governed by the GNU Affero General Public License v3.0 (AGPL-3.0).
+
 A key innovation of this tool is its **dual-workflow design**, making it scalable for:
 1.  **Data-Rich Cities:** A full pipeline that processes GTFS and geospatial data (`app.py`).
 2.  **Data-Scarce Cities:** A fully interactive tool for manually creating and analyzing routes where no GTFS data exists (`app_manual.py`).
