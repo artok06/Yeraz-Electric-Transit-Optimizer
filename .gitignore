@@ -208,3 +208,7 @@ __marimo__/
 
 data/filtered_routes/
 data/input_gtfs/
+data/input_geospatial/
+data/temp/
+temp/
+solution/
