@@ -1,5 +1,16 @@
 # Yeraz Electric Transit Optimizer
 
+> **📦 Archived.** Active development on this project has concluded as of
+> v2.0.0. The repository remains public and open for forking under
+> AGPL-3.0, but is no longer actively maintained. See
+> [`RETROSPECTIVE.md`](RETROSPECTIVE.md) for a summary of what the project
+> achieved and its final state.
+>
+> **Achievements:** Finalist, AI x City Climate Action Hackathon 2025 ·
+> Presented at Yerevan Sustainable Energy Days 2026 (Certificate of
+> Professional Consultation, Yerevan Municipality) · Presented at
+> INFORMS TSL 2026
+
 ## Overview
 
 Yeraz is a data-driven decision support tool that helps city planners
@@ -128,5 +139,5 @@ enabled:
 A dual-workflow decision support tool for bus fleet electrification —
 built and presented as part of INFORMS TSL 2026 (Cambridge, MA).
 
-**Author:** Artavazd Khachatryan · American University of Armenia
+**Author:** Artavazd Khachatryan · American University of Armenia · [artkhachatryan.me](https://artkhachatryan.me/)
 **License:** AGPL-3.0 (v1.1+) / CC BY-SA 4.0 (v1.0, pre-2025-12-13)
