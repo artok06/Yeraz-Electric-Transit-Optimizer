@@ -1,0 +1,4 @@
+model_id,model_name,fleet_size,range_km,energy_use_kWh_per_km,battery_capacity_kWh,full_charging_time_h,max_charging_power_kW,monthly_om_cost_$
+1,Yutong U12 high-capacity,110,420,1.35,563,4.5,150,2400
+2,BYD K9 12m,45,320,1.45,464,3.5,150,1900
+3,Solaris Urbino 18 articulated,25,350,1.95,683,4.5,150,2800

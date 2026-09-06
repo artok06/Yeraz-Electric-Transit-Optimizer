@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Self-Contained Equity Score Calculator (v6.0 - Simplified Formula)
+Self-Contained Equity Score Calculator (v7.0 - Unique Temp Dirs)
 Adapted for modular execution by the orchestrator.
 """
 
@@ -16,6 +16,7 @@ from scipy.spatial import cKDTree
 from rasterio.mask import mask as rio_mask
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 import shutil
+from datetime import datetime # Import datetime to create unique directory names
 
 # --- Configuration & Parameters ---
 TARGET_CRS = "EPSG:32616"
@@ -35,22 +36,8 @@ def find_geospatial_files(directory: str, prefix: str) -> List[str]:
         else: break
     return multi_files
 
-def clean_directory(dir_path):
-    """Creates a directory if it doesn't exist, or clears its contents if it does."""
-    if os.path.exists(dir_path):
-        for item_name in os.listdir(dir_path):
-            item_path = os.path.join(dir_path, item_name)
-            try:
-                if os.path.isfile(item_path) or os.path.islink(item_path):
-                    os.unlink(item_path)
-                elif os.path.isdir(item_path):
-                    shutil.rmtree(item_path)
-            except Exception as e:
-                raise Exception(f"Failed to delete {item_path}. Reason: {e}") from e
-    else:
-        os.makedirs(dir_path)
-
 def check_and_reproject_rasters(raster_paths: List[str], target_crs_str: str, temp_dir: str) -> List[str]:
+    # Ensure the unique temporary directory exists before use
     os.makedirs(temp_dir, exist_ok=True)
     processed_paths = []
     target_crs_obj = rasterio.crs.CRS.from_string(target_crs_str)
@@ -196,8 +183,15 @@ def calculate_equity_score(routes_df: pd.DataFrame, geo_dir: str) -> pd.DataFram
         if not pop_tifs or not bld_tifs:
             raise FileNotFoundError(f"Could not find population/building rasters in {geo_dir}.")
 
-        temp_dir = os.path.join(os.path.dirname(geo_dir), 'temp', 'reprojected')
-        clean_directory(temp_dir)
+        # --- MODIFICATION START ---
+        # Create a unique directory for this run to avoid file lock errors.
+        # This replaces the old method of cleaning a static 'temp' directory.
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_specific_dir = os.path.join(os.path.dirname(geo_dir), 'temp_runs', f'run_{timestamp}')
+        temp_dir = os.path.join(run_specific_dir, 'reprojected')
+        print(f"INFO: Using unique temporary directory for this run: {temp_dir}")
+        # --- MODIFICATION END ---
+
         processed_pop_tifs = check_and_reproject_rasters(pop_tifs, TARGET_CRS, temp_dir)
         processed_bld_tifs = check_and_reproject_rasters(bld_tifs, TARGET_CRS, temp_dir)
 

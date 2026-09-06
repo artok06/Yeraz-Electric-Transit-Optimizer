@@ -1,0 +1,3 @@
+depot_id,depot_name,number_of_charging_points,max_power_per_point_kW,monthly_om_cost_$,location
+1,Shengavit,18,150,9000,"[[40.143443, 44.491804]]"
+2,Nor Nork,15,120,8000,"[[40.185634, 44.577141]]"

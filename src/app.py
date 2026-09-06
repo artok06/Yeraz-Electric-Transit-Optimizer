@@ -97,17 +97,17 @@ if 'files_saved' not in st.session_state: st.session_state.files_saved = False
 # --- Sidebar ---
 st.sidebar.title("Optimization Parameters")
 st.sidebar.subheader("1. Objective Weights")
-w_env = st.sidebar.slider("Environmental Weight", 0.0, 1.0, 0.40, 0.05)
-w_equity = st.sidebar.slider("Equity Weight", 0.0, 1.0, 0.35, 0.05)
-w_ridership = st.sidebar.slider("Ridership Weight", 0.0, 1.0, 0.25, 0.05)
+w_env = st.sidebar.slider("Environmental Weight", 0.0, 1.0, 0.0, 0.05)
+w_equity = st.sidebar.slider("Equity Weight", 0.0, 1.0, 0.5, 0.05)
+w_ridership = st.sidebar.slider("Ridership Weight", 0.0, 1.0, 0.5, 0.05)
 st.sidebar.subheader("2. Financial Constraints")
 budget = st.sidebar.number_input("Monthly Budget ($)", min_value=100000, value=500000)
-energy_cost = st.sidebar.number_input("Energy Cost ($/kWh)", min_value=0.01, value=0.20, format="%.2f")
+energy_cost = st.sidebar.number_input("Energy Cost ($/kWh)", min_value=0.01, value=0.11, format="%.2f")
 st.sidebar.subheader("3. Operational Constraints")
-max_routes = st.sidebar.number_input("Max Routes to Electrify", min_value=1, value=5, step=1)
+max_routes = st.sidebar.number_input("Max Routes to Electrify", min_value=1, value=25, step=1)
 w_weather = st.sidebar.number_input("Weather Factor", min_value=1.0, value=1.10, format="%.2f")
 gamma_safety = st.sidebar.number_input("Battery Safety Factor", min_value=1.0, value=1.15, format="%.2f")
-beta_reserve = st.sidebar.number_input("Reserve Fleet Factor", min_value=0.0, value=0.10, format="%.2f")
+beta_reserve = st.sidebar.number_input("Reserve Fleet Factor", min_value=0.0, value=0.12, format="%.2f")
 t_night = st.sidebar.number_input("Night Charging Time (minutes)", min_value=60, value=480, step=30)
 
 # --- Main App Body ---
@@ -283,7 +283,7 @@ if st.session_state.stage in ['optimize', 'results']:
                 log_placeholder = st.empty()
             
             optimizer_cmd = [
-                sys.executable, os.path.join(SRC_DIR, "greedy_heuristic.py"),
+                sys.executable, os.path.join(SRC_DIR, "mip_heuristic.py"),
                 "--w_env", str(w_env),
                 "--w_equity", str(w_equity),
                 "--w_ridership", str(w_ridership),

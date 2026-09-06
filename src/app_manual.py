@@ -215,7 +215,7 @@ if st.session_state.stage == 'create_routes':
             st.markdown("###### Direction 0 (Outbound)")
             m0 = folium.Map(location=[40.1792, 44.4991], zoom_start=12)
             Draw(export=False, draw_options={'polyline':False,'polygon':False,'rectangle':False,'circle':False,'circlemarker':False}).add_to(m0)
-            map_data_0 = st_folium(m0, height=250, width=450, key="map_0")
+            map_data_0 = st_folium(m0, height=600, width=800, key="map_0")
             if st.button("Process Direction 0"):
                 with st.spinner("Processing..."):
                     stops = [f["geometry"]["coordinates"][::-1] for f in map_data_0.get("all_drawings",[]) if f["geometry"]["type"] == "Point"]
@@ -229,7 +229,7 @@ if st.session_state.stage == 'create_routes':
             st.markdown("###### Direction 1 (Return)")
             m1 = folium.Map(location=[40.1792, 44.4991], zoom_start=12)
             Draw(export=False, draw_options={'polyline':False,'polygon':False,'rectangle':False,'circle':False,'circlemarker':False}).add_to(m1)
-            map_data_1 = st_folium(m1, height=250, width=450, key="map_1")
+            map_data_1 = st_folium(m1, height=600, width=800, key="map_1")
             if st.button("Process Direction 1"):
                 with st.spinner("Processing..."):
                     stops = [f["geometry"]["coordinates"][::-1] for f in map_data_1.get("all_drawings",[]) if f["geometry"]["type"] == "Point"]
@@ -257,7 +257,7 @@ if st.session_state.stage == 'create_routes':
                     folium.PolyLine(st.session_state.current_route['osrm_coords_1'], color="red", weight=5, opacity=0.8, tooltip="Direction 1").add_to(preview_map)
                     for stop in st.session_state.current_route.get('drawn_stops_1', []):
                         folium.Marker(stop, icon=folium.Icon(color='red', icon='circle', prefix='fa')).add_to(preview_map)
-                st_folium(preview_map, height=300, width=700, key="preview_map")
+                st_folium(preview_map, height=600, width=800, key="preview_map")
 
     if st.session_state.manual_routes:
         st.markdown("---"); st.header("Step 2: Finalize and Upload Rasters")
@@ -339,66 +339,161 @@ if st.session_state.stage == 'operational_data':
             edited_depot_df.to_csv(os.path.join(RAW_DATA_DIR, "charging_depots.csv"), index=False)
         st.session_state.stage = 'optimize'; st.rerun()
 
+# --- STEP 6: FINAL OPTIMIZATION & DASHBOARD ---
 if st.session_state.stage in ['optimize', 'results']:
-    st.header("Step 6: Final Optimization")
+    st.header("Step 6: Optimization & Results")
+
+    # --- ACTION BUTTON ---
     if st.session_state.stage == 'optimize':
-        st.info("All data is ready. Click the button to run the optimization model.")
-        if st.button("Recommend Routes", type="primary"):
-            st.session_state.stage = 'results'; st.rerun()
+        st.info("🚀 All data is ready. Click below to run the Yeraz AI Optimizer.")
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("Run Optimization", type="primary", use_container_width=True):
+                st.session_state.stage = 'results'
+                st.rerun()
+
+    # --- RESULTS DASHBOARD ---
     if st.session_state.stage == 'results':
-        with st.spinner("Running optimization model... please wait."):
-            with st.expander("Show Live Log", expanded=True):
+        
+        # 1. LOADING STATE
+        if not st.session_state.get('optimization_results'):
+            with st.status("🔄 Optimizing Transit Network...", expanded=True) as status:
+                st.write("Initializing heuristic solver...")
                 log_placeholder = st.empty()
-            optimizer_cmd = [
-                sys.executable, os.path.join(SRC_DIR, "greedy_heuristic.py"),
-                f"--w_env={w_env}", f"--w_equity={w_equity}", f"--w_ridership={w_ridership}",
-                f"--budget={budget}", f"--energy_cost={energy_cost}", f"--max_routes={max_routes}",
-                f"--w_weather={w_weather}", f"--gamma_safety={gamma_safety}",
-                f"--beta_reserve={beta_reserve}", f"--t_night={t_night}"
-            ]
-            full_output, return_code = run_subprocess_in_thread(optimizer_cmd, log_placeholder)
-            if return_code == 0:
-                results_path = os.path.join(TEMP_DIR, "results.json")
-                max_wait_time, start_time, file_found = 5, time.time(), False
-                while time.time() - start_time < max_wait_time:
-                    if os.path.exists(results_path): file_found = True; break
-                    time.sleep(0.2)
-                if file_found:
-                    try:
+                
+                optimizer_cmd = [
+                    sys.executable, os.path.join(SRC_DIR, "mip_heuristic.py"),
+                    f"--w_env={w_env}", f"--w_equity={w_equity}", f"--w_ridership={w_ridership}",
+                    f"--budget={budget}", f"--energy_cost={energy_cost}", f"--max_routes={max_routes}",
+                    f"--w_weather={w_weather}", f"--gamma_safety={gamma_safety}",
+                    f"--beta_reserve={beta_reserve}", f"--t_night={t_night}"
+                ]
+                
+                full_output, return_code = run_subprocess_in_thread(optimizer_cmd, log_placeholder)
+                
+                if return_code == 0:
+                    status.update(label="✅ Optimization Complete!", state="complete", expanded=False)
+                    # Load Results
+                    results_path = os.path.join(TEMP_DIR, "results.json")
+                    time.sleep(1) # Small buffer for file write
+                    if os.path.exists(results_path):
                         with open(results_path, 'r', encoding='utf-8') as f:
                             st.session_state.optimization_results = json.load(f)
-                    except Exception as e:
-                        st.error(f"[ERROR] Could not parse results file. Error: {repr(e)}")
-                        st.session_state.optimization_results = None
+                        st.rerun() # Refresh to show dashboard
+                    else:
+                        st.error("Results file not found.")
                 else:
-                    st.error(f"[ERROR] Optimization script finished, but results file was not found.")
-                    st.session_state.optimization_results = None
-            else:
-                st.error("The optimization script failed. Please review the log for errors.")
-                st.session_state.optimization_results = None
-        if st.session_state.optimization_results and st.session_state.optimization_results.get("has_solution"):
+                    status.update(label="❌ Optimization Failed", state="error")
+                    st.error("The optimization process encountered an error.")
+                    st.stop()
+
+        # 2. THE DASHBOARD VIEW
+        if st.session_state.get('optimization_results'):
             results = st.session_state.optimization_results
-            st.success("Optimization Complete!")
-            st.subheader("Selected Route Summary")
-            st.code(results.get("summary_table", "No summary table provided."), language=None)
-            st.subheader("Notes")
-            st.markdown(results.get("summary_notes", "No notes provided."))
-            st.subheader("Interactive Route Maps")
-            map_paths = results.get("map_paths", [])
-            if map_paths:
-                for map_path in map_paths:
-                    map_name = os.path.basename(map_path).replace('.html', '').replace('_', ' ').title()
-                    with st.expander(f"Show Map for {map_name}"):
-                        try:
-                            with open(map_path, 'r', encoding='utf-8') as f:
-                                html_content = f.read()
-                            components.html(html_content, height=500, scrolling=True)
-                        except Exception as e:
-                            st.error(f"Could not display map. Error: {e}")
+            
+            if not results.get("has_solution"):
+                st.warning("⚠️ No feasible solution found under current constraints. Try increasing the budget.")
             else:
-                st.write("No map files were generated.")
-        else:
-            st.error("[ERROR] Optimization failed or found no solution with the given constraints.")
-        if st.button("Start Over"):
+                # --- A. KPI ROW (The "Executive Summary") ---
+                st.markdown("### 🎯 Executive Summary")
+                kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+                
+                # Attempt to extract numbers safely (Defaults to "N/A" if keys miss)
+                total_cost = results.get("total_cost", 0)
+                total_buses = results.get("total_buses", 0)
+                routes_count = len(results.get("selected_routes", []))
+                # If your backend sends these specific keys, use them. Otherwise, calculate or use defaults.
+                co2_saved = results.get("total_emissions_reduction", "High") 
+                equity_score = results.get("equity_impact", "Medium")
+
+                kpi1.metric("Routes Electrified", f"{routes_count}", delta=f"Limit: {max_routes}")
+                kpi2.metric("Budget Utilized", f"${total_cost:,.0f}", delta=f"of ${budget:,.0f}")
+                kpi3.metric("Electric Buses Deployed", f"{total_buses}", delta="Active Fleet")
+                kpi4.metric("Equity Impact", f"{equity_score}")
+
+                st.markdown("---")
+
+                # --- B. DETAILED CONTENT TABS ---
+                tab_table, tab_maps, tab_notes = st.tabs(["📊 Selected Routes", "🗺️ Network Maps", "📝 Technical Notes"])
+
+               # --- IN app_manual.py (Inside the 'results' block) ---
+
+                with tab_table:
+                    # Check if we have structured data
+                    if "selected_routes" in results and isinstance(results["selected_routes"], list):
+                        df_res = pd.DataFrame(results["selected_routes"])
+                        
+                        # RENAME columns for the display (Hide the raw score)
+                        df_display = df_res.rename(columns={
+                            "route_id": "Route",
+                            "description": "Description",
+                            "ridership": "Daily Passengers",
+                            "cost": "Monthly Cost"
+                        })
+                        
+                        # Configure the table
+                        st.dataframe(
+                            df_display, 
+                            use_container_width=True, 
+                            hide_index=True,
+                            column_order=["Route", "Description", "Daily Passengers", "emissions_score", "equity_score", "Monthly Cost"],
+                            column_config={
+                                "Monthly Cost": st.column_config.NumberColumn(format="$%d"),
+                                "Daily Passengers": st.column_config.NumberColumn(format="%d"),
+                                
+                                # HIDE raw CO2 number, show a BAR
+                                "emissions_score": st.column_config.ProgressColumn(
+                                    "Eco-Impact Rating",
+                                    help="Relative score: Higher bar means replacing this route removes more pollution.",
+                                    min_value=0,
+                                    max_value=100,
+                                    format=" " # This HIDES the number text inside the bar
+                                ),
+                                "equity_score": st.column_config.ProgressColumn(
+                                    "Equity Rating",
+                                    min_value=0,
+                                    max_value=100,
+                                    format=" " # Hides the number
+                                ),
+                            }
+                        )
+                    else:
+                        st.text(results.get("summary_table", "No table data."))
+                    
+                    # Download Button
+                    st.download_button(
+                        label="📥 Download Full Report (JSON)",
+                        data=json.dumps(results, indent=2),
+                        file_name="yeraz_optimization_results.json",
+                        mime="application/json"
+                    )
+
+                with tab_maps:
+                    map_paths = results.get("map_paths", [])
+                    if map_paths:
+                        cols = st.columns(2) # Grid Layout
+                        for i, map_path in enumerate(map_paths):
+                            map_name = os.path.basename(map_path).replace('.html', '').replace('_', ' ').title()
+                            with cols[i % 2]: # Alternating columns
+                                st.markdown(f"**{map_name}**")
+                                try:
+                                    with open(map_path, 'r', encoding='utf-8') as f:
+                                        html_content = f.read()
+                                    components.html(html_content, height=400, scrolling=False)
+                                except Exception as e:
+                                    st.error(f"Error loading map: {e}")
+                    else:
+                        st.info("No route maps generated.")
+
+                with tab_notes:
+                    st.markdown("#### Solver Logs & Warnings")
+                    st.info(results.get("summary_notes", "No operational notes provided."))
+                    
+                    with st.expander("View Raw Optimization Logic"):
+                        st.json(results)
+
+        # Restart Button
+        st.markdown("---")
+        if st.button("🔄 Start New Simulation", type="secondary"):
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()

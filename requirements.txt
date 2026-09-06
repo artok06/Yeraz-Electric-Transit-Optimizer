@@ -1,0 +1,30 @@
+# Core app / data
+streamlit
+streamlit-folium
+pandas
+numpy
+
+# Mapping / geospatial
+folium
+geopandas
+shapely
+rasterio
+
+# Routing (real road-network map paths via OSRM)
+requests
+polyline
+
+# ML (ridership model)
+scikit-learn
+joblib
+
+# Optimization
+pulp
+scipy
+
+# Output formatting
+tabulate
+
+# Note: versions intentionally left unpinned. Once you've confirmed the
+# app runs cleanly in your environment, consider locking exact versions
+# with `pip freeze > requirements.txt` for reproducibility.
